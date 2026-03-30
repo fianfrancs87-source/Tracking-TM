@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tracking Truck</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    .box {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: none;
+      color: white;
+      font-size: 16px;
+      border-radius: 6px;
+    }
+
+    .start { background: green; }
+    .stop { background: red; }
+
+    .status {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h3>🚛 Tracking Truck</h3>
+
+  <label>Pilih Truck</label>
+  <select id="truck">
+    <option value="tm18">TM 18</option>
+    <option value="tm17">TM 17</option>
+    <option value="tm16">TM 16</option>
+    <option value="tm15">TM 15</option>
+    <option value="tm06">TM 06</option>
+    <option value="tm05">TM 05</option>
+  </select>
+
+  <label>Nama Sopir</label>
+  <input type="text" id="driver" placeholder="Masukkan nama">
+
+  <button class="start" onclick="startTracking()">▶️ Aktifkan Tracking</button>
+  <button class="stop" onclick="stopTracking()">⛔ Stop Tracking</button>
+
+  <div class="status" id="status">Status: OFF</div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAEu5b_jxhbKeiMHgis213EOjBzsf5iryA",
+  databaseURL: "https://tracking-tm-24b83-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let watchId = null;
+
+function startTracking() {
+  const id = document.getElementById("truck").value;
+  const driver = document.getElementById("driver").value;
+
+  if (!driver) {
+    alert("Isi nama sopir dulu");
+    return;
+  }
+
+  if (navigator.geolocation) {
+    watchId = navigator.geolocation.watchPosition(pos => {
+
+      db.ref("trucks/" + id).set({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        driver: driver,
+        time: Date.now(),
+        status: "online"
+      });
+
+    }, err => {
+      alert("GPS error");
+    }, {
+      enableHighAccuracy: true
+    });
+
+    document.getElementById("status").innerText = "Status: ONLINE";
+  }
+}
+
+function stopTracking() {
+  const id = document.getElementById("truck").value;
+
+  if (watchId) {
+    navigator.geolocation.clearWatch(watchId);
+  }
+
+  db.ref("trucks/" + id).update({
+    status: "offline"
+  });
+
+  document.getElementById("status").innerText = "Status: OFF";
+}
+</script>
+
+</body>
+</html>
